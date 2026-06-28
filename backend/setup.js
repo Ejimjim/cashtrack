@@ -38,34 +38,6 @@ insertType.run('expense');
 const saleId    = db.prepare(`SELECT type_id FROM transaction_type WHERE type_name = 'sale'`).get().type_id;
 const expenseId = db.prepare(`SELECT type_id FROM transaction_type WHERE type_name = 'expense'`).get().type_id;
 
-// ── Seed categories ───────────────────────────────────────────────────────────
-
-const insertCategory = db.prepare(
-  `INSERT INTO category (type_id, category_name)
-   SELECT ?, ?
-   WHERE NOT EXISTS (
-     SELECT 1 FROM category WHERE type_id = ? AND category_name = ?
-   )`
-);
-
-const saleCategories = [
-  'Food & Drinks', 'Clothing & Fabric', 'Electronics',
-  'Services', 'Agriculture', 'Other',
-];
-
-const expenseCategories = [
-  'Stock/Goods', 'Transport', 'Rent',
-  'Utilities', 'Staff', 'Other',
-];
-
-for (const name of saleCategories) {
-  insertCategory.run(saleId, name, saleId, name);
-}
-
-for (const name of expenseCategories) {
-  insertCategory.run(expenseId, name, expenseId, name);
-}
-
 // ── Verification ──────────────────────────────────────────────────────────────
 
 const tables = ['transaction_type', 'category', 'transactions'];
@@ -78,13 +50,5 @@ for (const table of tables) {
   const { count } = db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get();
   console.log(table.padEnd(20), count);
 }
-
-console.log('\nSale categories:');
-db.prepare(`SELECT category_name FROM category WHERE type_id = ?`).all(saleId)
-  .forEach(r => console.log('  •', r.category_name));
-
-console.log('\nExpense categories:');
-db.prepare(`SELECT category_name FROM category WHERE type_id = ?`).all(expenseId)
-  .forEach(r => console.log('  •', r.category_name));
 
 console.log('\nDone.\n');
