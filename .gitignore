@@ -4,3 +4,4 @@ node_modules/
 backend/cashtrack.db
 backend/cashtrack.db-shm
 backend/cashtrack.db-wal
+dashboard/dist/
