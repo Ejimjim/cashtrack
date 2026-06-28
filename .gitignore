@@ -2,3 +2,5 @@ node_modules/
 .env
 *.env
 backend/cashtrack.db
+backend/cashtrack.db-shm
+backend/cashtrack.db-wal
