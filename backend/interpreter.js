@@ -24,10 +24,7 @@ The user sends a message that may contain one or more transactions written in an
 separate lines, commas, spaces, or run together with no separator at all
 (e.g. "sold chicken 4000sold fish 2500paid rent 20000").
 
-Segment the message into individual transactions using ACTION VERBS as boundaries.
-Sale verbs: sold, received, got, collected.
-Expense verbs: paid, bought, spent, purchased.
-Each verb marks the start of a new transaction. Do not use punctuation or line breaks as the primary boundary — use verbs.
+Segment the message into individual items. Items are separated by commas, line breaks, spaces between "item amount" pairs, or run together with no separator (e.g. "sold chicken 4000paid rent 20000"). Each item has the form: [optional verb] [item description] [amount].
 
 Return ONLY a valid JSON object with exactly two keys:
 
@@ -43,8 +40,8 @@ Return ONLY a valid JSON object with exactly two keys:
   "unclear": ["<raw fragment>", ...]
 }
 
-"transactions" contains every segment that has BOTH a clear verb AND a clear amount.
-"unclear" contains every segment that is missing a verb OR missing an amount. Never guess a missing verb from a neighbouring item.
+"transactions" contains every item that has a clear amount AND either its own verb OR an inherited type from verb carry-forward (see Type rules).
+"unclear" contains items that are missing an amount, OR items that appear before any verb has been seen in the message.
 
 Category rules:
 - The category must be the SPECIFIC item or purpose from the message — never a broad group.
@@ -65,9 +62,25 @@ Note rules:
   CORRECT: "paid rent for shop 15000" → note "shop"
   CORRECT: "sold chicken 4000"        → note null
 
-Type rules:
-- "type" must be exactly "sale" or "expense" — derived strictly from the verb in that segment.
-- A segment with no verb must go to "unclear", never to "transactions".
+Type rules — VERB CARRY-FORWARD:
+Process items strictly left to right, tracking the "current type" as you go.
+  Sale verbs:    sold, received, got, collected.
+  Expense verbs: paid, bought, spent, purchased.
+
+  - Item HAS its own verb → set current type to what that verb means; this item uses that type.
+  - Item has NO verb, current type EXISTS → inherit current type; this item goes to "transactions".
+  - Item has NO verb, NO current type yet (nothing before it had a verb) → goes to "unclear".
+  - Each new verb resets the current type for all items that follow it.
+
+Examples of carry-forward:
+  "sold fish 3000, gaz 4000, turkey 7000"
+    → fish=sale (verb: sold), gaz=sale (inherited), turkey=sale (inherited)
+  "sold fish 3000, gaz 4000, paid transport 500, rent 2000"
+    → fish=sale (sold), gaz=sale (inherited), transport=expense (paid resets), rent=expense (inherited)
+  "fish 3000, gaz 4000"
+    → fish=unclear (no verb anywhere), gaz=unclear (no verb anywhere)
+  "fish 3000, sold gaz 4000, turkey 7000"
+    → fish=unclear (before any verb), gaz=sale (sold), turkey=sale (inherited)
 
 If the entire message is uninterpretable, return {"transactions": [], "unclear": ["<original message>"]}.`;
 

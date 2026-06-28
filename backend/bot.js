@@ -24,6 +24,63 @@ Ask for your figures:
 
 I will handle the rest.`;
 
+// ── Undo ──────────────────────────────────────────────────────────────────────
+
+const UNDO_RE = /^\s*(undo|delete last|cancel last|remove last)\s*$/i;
+
+function handleUndo(chatId) {
+  const last = db.prepare(`
+    SELECT
+      tx.transaction_id AS id,
+      t.type_name       AS type,
+      c.category_name   AS category,
+      tx.amount,
+      tx.txn_date       AS date
+    FROM transactions tx
+    JOIN transaction_type t ON t.type_id     = tx.type_id
+    JOIN category c         ON c.category_id = tx.category_id
+    ORDER BY tx.created_at DESC, tx.transaction_id DESC
+    LIMIT 1
+  `).get();
+
+  if (!last) {
+    return bot.sendMessage(chatId, 'Nothing to undo — no transactions recorded yet.');
+  }
+
+  db.prepare('DELETE FROM transactions WHERE transaction_id = ?').run(last.id);
+
+  const label = last.type === 'sale' ? 'Sale' : 'Expense';
+  const now   = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+  const totals = db.prepare(`
+    SELECT
+      SUM(CASE WHEN t.type_name = 'sale'    THEN tx.amount ELSE 0 END) AS sales,
+      SUM(CASE WHEN t.type_name = 'expense' THEN tx.amount ELSE 0 END) AS expenses
+    FROM transactions tx
+    JOIN transaction_type t ON t.type_id = tx.type_id
+    WHERE tx.txn_date = @today
+  `).get({ today });
+
+  const sales    = totals.sales    || 0;
+  const expenses = totals.expenses || 0;
+  const net      = sales - expenses;
+  const netLine  = net >= 0
+    ? `Up N${net.toLocaleString()} today`
+    : `Down N${Math.abs(net).toLocaleString()} today`;
+
+  const reply = [
+    `Removed: ${label} — ${last.category} N${Number(last.amount).toLocaleString()}`,
+    '',
+    'Today',
+    `  Sales    : N${sales.toLocaleString()}`,
+    `  Expenses : N${expenses.toLocaleString()}`,
+    `  ${netLine}`,
+  ].join('\n');
+
+  bot.sendMessage(chatId, reply);
+}
+
 // ── Query detection ────────────────────────────────────────────────────────────
 
 const TRANSACTION_VERB = /\b(sold|paid|bought|spent|received|got|collected|purchased)\b/i;
@@ -114,6 +171,10 @@ bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
 
   try {
+    if (UNDO_RE.test(msg.text)) {
+      return handleUndo(chatId);
+    }
+
     const query = detectQuery(msg.text);
 
     if (query === 'today') {

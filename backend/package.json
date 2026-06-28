@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node bot.js",
+    "api": "node api.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -13,7 +14,9 @@
   "type": "commonjs",
   "dependencies": {
     "better-sqlite3": "^12.11.1",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "node-telegram-bot-api": "^1.1.2",
     "openai": "^6.45.0"
   },
