@@ -10,19 +10,53 @@ const { todayInsight, weekInsights, balanceInsight } = require('./insights');
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 
-const WELCOME = `Welcome to CashTrack!
+const WELCOME = `Welcome to CashTrack! 👋
 
-Record transactions by typing what happened:
+Just type what happened and I will save it for you.
+
+── Recording a sale ──────────────────────
+Use a selling word, then the item and amount:
+
+  sold rice 3500
   sold chicken 4000
-  sold rice 3500, paid transport 800
-  sold fish 2500 paid rent 20000 bought stock 15000
+  received 8000 from customer
 
-Ask for your figures:
+── Recording an expense ──────────────────
+Use a spending word, then the item and amount:
+
+  paid rent 20000
+  bought stock 5000
+  paid transport 800
+
+── Several items in one message ──────────
+List them separated by commas or lines:
+
+  sold fish 3000, gaz 4000, turkey 7000
+
+One selling word covers everything that follows.
+Switch action word to switch type:
+
+  sold fish 3000, gaz 4000, paid transport 500
+
+  → fish and gaz are sales
+  → transport is an expense
+
+── Always check what I recorded ──────────
+I will show every item I saved. Check that each
+line is correct before you move on:
+
+  ✓ Sale — fish N3,000
+  ✓ Sale — gaz N4,000
+  ✓ Expense — transport N500
+
+── Check your figures any time ───────────
   today       — today's sales, expenses, and net
-  this week   — last 7 days with comparison to prior week
+  this week   — last 7 days and comparison
   balance     — all-time running total
 
-I will handle the rest.`;
+── Remove a wrong entry ──────────────────
+To remove an entry, open the dashboard
+and use the 🗑 button in History.`;
 
 // ── Undo ──────────────────────────────────────────────────────────────────────
 
