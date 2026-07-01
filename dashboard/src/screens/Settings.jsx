@@ -1,4 +1,24 @@
-export default function Settings() {
+import { useState } from 'react';
+import { resetData } from '../api.js';
+
+export default function Settings({ role, onLogout }) {
+  const [resetting, setResetting] = useState(false);
+  const [resetDone, setResetDone] = useState(false);
+
+  async function handleReset() {
+    if (!confirm('Delete all transactions and categories? This cannot be undone.')) return;
+    setResetting(true);
+    try {
+      await resetData();
+      setResetDone(true);
+      setTimeout(() => setResetDone(false), 3000);
+    } catch (err) {
+      alert('Reset failed: ' + err.message);
+    } finally {
+      setResetting(false);
+    }
+  }
+
   return (
     <div className="screen">
       <div className="header">
@@ -27,6 +47,26 @@ export default function Settings() {
           <span className="stat-label">Version</span>
           <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>1.0 · Layer 4</span>
         </div>
+        <div className="stat-row">
+          <span className="stat-label">Signed in as</span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>{role}</span>
+        </div>
+      </div>
+
+      {role === 'admin' && (
+        <div style={{ margin: '0 16px 12px' }}>
+          <button
+            className="danger-btn"
+            onClick={handleReset}
+            disabled={resetting}
+          >
+            {resetting ? 'Resetting…' : resetDone ? '✓ Reset complete' : 'Reset all data'}
+          </button>
+        </div>
+      )}
+
+      <div style={{ margin: '0 16px 12px' }}>
+        <button className="logout-btn" onClick={onLogout}>Sign out</button>
       </div>
     </div>
   );

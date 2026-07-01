@@ -15,6 +15,30 @@ const PORT = process.env.PORT || 3010;
 app.use(cors());
 app.use(express.json());
 
+const USERS = {
+  joel: { password: process.env.ADMIN_PASSWORD, role: 'admin' },
+  demo: { password: process.env.USER_PASSWORD,  role: 'user'  },
+};
+
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  const user = USERS[username];
+  if (!user || !user.password || user.password !== password) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+  res.json({ role: user.role });
+});
+
+app.post('/api/reset', (req, res) => {
+  try {
+    db.exec(`DELETE FROM transactions; DELETE FROM category;`);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[api/reset]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 function handle(res, fn) {
   try {
     res.json(fn());
