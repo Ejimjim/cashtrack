@@ -16,8 +16,8 @@ app.use(cors());
 app.use(express.json());
 
 const USERS = {
-  joel: { password: process.env.ADMIN_PASSWORD, role: 'admin' },
-  demo: { password: process.env.USER_PASSWORD,  role: 'user'  },
+  [process.env.ADMIN_USERNAME || 'joel']: { password: process.env.ADMIN_PASSWORD, role: 'admin' },
+  [process.env.USER_USERNAME  || 'demo']: { password: process.env.USER_PASSWORD,  role: 'user'  },
 };
 
 app.post('/api/login', (req, res) => {
