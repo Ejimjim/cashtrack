@@ -39,18 +39,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Copy docker-compose.yml to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          source: "docker-compose.yml"
-          target: "~/cashtrack/"
-
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -61,6 +49,24 @@ jobs:
             echo "Creating deploy directory..."
             mkdir -p ~/cashtrack
             cd ~/cashtrack/
+
+            echo "Writing docker-compose.yml..."
+            cat <<'COMPOSE' > docker-compose.yml
+            services:
+              app:
+                image: ${APP_IMAGE}:latest
+                restart: unless-stopped
+                env_file: .env
+                environment:
+                  - PORT=3010
+                  - DB_PATH=/data/cashtrack.db
+                ports:
+                  - "3010:3010"
+                volumes:
+                  - db_data:/data
+            volumes:
+              db_data:
+            COMPOSE
 
             echo "Writing environment file..."
             cat <<EOF > .env
@@ -75,7 +81,7 @@ jobs:
             echo "Logging in to GHCR..."
             echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            echo "Pulling latest images..."
+            echo "Pulling latest image..."
             docker compose pull
 
             echo "Starting containers..."
