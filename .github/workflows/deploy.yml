@@ -38,45 +38,50 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    env:
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set image name
-        run: echo "APP_IMAGE=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/cashtrack-app" >> $GITHUB_ENV
-
-      - name: Copy compose file to VPS
+      - name: Copy docker-compose.yml to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
-          source: docker-compose.yml
-          target: /opt/cashtrack
-          overwrite: true
+          source: "docker-compose.yml"
+          target: "~/cashtrack/"
 
-      - name: Deploy
-        uses: appleboy/ssh-action@v1
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
-          envs: TELEGRAM_BOT_TOKEN,OPENAI_API_KEY,APP_IMAGE,GHCR_TOKEN
           script: |
-            cd /opt/cashtrack
+            echo "Creating deploy directory..."
+            mkdir -p ~/cashtrack
+            cd ~/cashtrack/
 
-            printf '%s\n' \
-              "TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}" \
-              "OPENAI_API_KEY=${OPENAI_API_KEY}" \
-              "APP_IMAGE=${APP_IMAGE}" \
-              "PORT=3010" \
-              "DB_PATH=/data/cashtrack.db" > .env
+            echo "Writing environment file..."
+            cat <<EOF > .env
+            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            APP_IMAGE=ghcr.io/${{ github.repository_owner }}/cashtrack-app
+            PORT=3010
+            DB_PATH=/data/cashtrack.db
+            EOF
+            sed -i "s|APP_IMAGE=.*|APP_IMAGE=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/cashtrack-app|" .env
 
-            GHCR_OWNER=$(echo "${APP_IMAGE}" | cut -d'/' -f2)
-            echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_OWNER}" --password-stdin
+            echo "Logging in to GHCR..."
+            echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
+            echo "Pulling latest images..."
             docker compose pull
+
+            echo "Starting containers..."
             docker compose up -d --remove-orphans
+
+            echo "Cleaning up old images..."
+            docker image prune -f
+
+            echo "Deploy complete."
