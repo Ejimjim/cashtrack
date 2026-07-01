@@ -205,3 +205,4 @@ cashtrack/
 ## Limitations and Future Work
 
 This prototype prioritises breadth of feature coverage over production hardening. Known limitations include single-user design (no authentication), English-only LLM prompts, and no offline support. The system has not been evaluated with target users in a field setting. Full discussion of limitations, evaluation methodology, and proposed future directions is provided in the accompanying thesis.
+
