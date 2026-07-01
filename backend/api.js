@@ -2,6 +2,7 @@
 
 require('dotenv').config();
 
+const path    = require('path');
 const express = require('express');
 const cors    = require('cors');
 const db      = require('./db');
@@ -9,7 +10,7 @@ const { todaySummary, weekSummary, weekComparison, runningBalance, topCategories
 const { todayInsight, weekInsights, balanceInsight } = require('./insights');
 
 const app  = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3010;
 
 app.use(cors());
 app.use(express.json());
@@ -86,6 +87,10 @@ app.delete('/api/transaction/:id', (req, res) => {
   }
 });
 
+const publicDir = path.join(__dirname, 'public');
+app.use(express.static(publicDir));
+app.get('/{*splat}', (req, res) => res.sendFile(path.join(publicDir, 'index.html')));
+
 app.listen(PORT, () => {
-  console.log(`CashTrack API running at http://localhost:${PORT}`);
+  console.log(`CashTrack running at http://localhost:${PORT}`);
 });

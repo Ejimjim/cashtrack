@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    image: ${APP_IMAGE:-cashtrack-app}:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - PORT=3010
+      - DB_PATH=/data/cashtrack.db
+    ports:
+      - "3010:3010"
+    volumes:
+      - db_data:/data
+
+volumes:
+  db_data:

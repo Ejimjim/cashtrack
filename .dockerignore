@@ -1,0 +1,11 @@
+backend/node_modules
+backend/__tests__
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
+backend/.env
+dashboard/node_modules
+dashboard/dist
+dashboard/.env
+.github
+.claude
